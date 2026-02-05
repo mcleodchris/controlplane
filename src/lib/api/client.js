@@ -199,7 +199,7 @@ class ApiClient {
    */
   async checkAuth() {
     try {
-      const response = await this.get('/authcheck');
+      const response = await this.post('/authcheck');
       return response?.valid === true;
     } catch (error) {
       return false;
