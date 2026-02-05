@@ -11,7 +11,8 @@ import { auth } from './lib/utils/auth.js';
 if (window.ENV?.API_BASE_URL?.startsWith('$')) {
   window.ENV = {
     API_BASE_URL: import.meta.env?.VITE_API_BASE_URL || 'http://localhost:3000',
-    APP_NAME: import.meta.env?.VITE_APP_NAME || 'Controlplane'
+    APP_NAME: import.meta.env?.VITE_APP_NAME || 'Controlplane',
+    WEBMENTION_TOKEN: import.meta.env?.VITE_WEBMENTION_TOKEN || '',
   };
 }
 
@@ -21,6 +22,7 @@ import { HomePage } from './pages/HomePage.js';
 import { HobbyPage } from './pages/HobbyPage.js';
 import { PhotosPage } from './pages/PhotosPage.js';
 import { NotesPage } from './pages/NotesPage.js';
+import { WebmentionsPage } from './pages/WebmentionsPage.js';
 
 // Import layout components
 import { AppHeader } from './components/common/AppHeader.js';
@@ -43,6 +45,7 @@ async function init() {
   router.on('/hobbies', HobbyPage);
   router.on('/photos', PhotosPage);
   router.on('/notes', NotesPage);
+  router.on('/webmentions', WebmentionsPage);
 
   // Protected route middleware
   router.beforeEach((path) => {

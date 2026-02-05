@@ -9,7 +9,7 @@ INDEX_FILE="/usr/share/nginx/html/index.html"
 if [ -f "$INDEX_FILE" ]; then
     # Replace the placeholder values with actual environment variables
     # Use a temporary file to avoid issues with envsubst
-    envsubst '${API_BASE_URL} ${APP_NAME}' < "$INDEX_FILE" > "${INDEX_FILE}.tmp"
+    envsubst '${API_BASE_URL} ${APP_NAME} ${WEBMENTION_TOKEN}' < "$INDEX_FILE" > "${INDEX_FILE}.tmp"
     mv "${INDEX_FILE}.tmp" "$INDEX_FILE"
     echo "Environment variables injected into index.html"
 else

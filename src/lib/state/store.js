@@ -17,6 +17,11 @@ const initialState = {
     loading: false,
     error: null,
   },
+  webmentions: {
+    items: [],
+    loading: false,
+    error: null,
+  },
   ui: {
     activeToast: null,
     confirmDialog: null,

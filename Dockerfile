@@ -32,6 +32,7 @@ RUN chmod +x /docker-entrypoint.d/40-inject-env.sh
 # Environment variables with defaults
 ENV API_BASE_URL=http://localhost:3000
 ENV APP_NAME=Controlplane
+ENV WEBMENTION_TOKEN=
 
 EXPOSE 80
 
