@@ -2,12 +2,14 @@
  * Home Page / Dashboard Component
  */
 
+import { html, render } from '../lib/html/html.js';
+
 export const HomePage = {
   /**
    * Render the home page
    */
   render(container) {
-    container.innerHTML = `
+    render(container, html`
       <div class="animate-fade-in">
         <h1 class="page-title">Dashboard</h1>
 
@@ -82,6 +84,6 @@ export const HomePage = {
           </div>
         </div>
       </div>
-    `;
+    `);
   },
 };

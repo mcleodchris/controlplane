@@ -7,6 +7,7 @@ import { apiClient } from '../lib/api/client.js';
 import { LoadingSpinner } from '../components/common/LoadingSpinner.js';
 import { Toast } from '../components/common/Toast.js';
 import { ConfirmDialog } from '../components/common/ConfirmDialog.js';
+import { html, render } from '../lib/html/html.js';
 
 export const HobbyPage = {
   _unsubscribe: null,
@@ -15,7 +16,7 @@ export const HobbyPage = {
    * Render the hobby page
    */
   render(container) {
-    container.innerHTML = `
+    render(container, html`
       <div class="animate-fade-in">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-lg);">
           <h1 class="page-title" style="margin-bottom: 0;">Hobby Log</h1>
@@ -52,7 +53,7 @@ export const HobbyPage = {
         <!-- Modal for Add/Edit Form -->
         <div id="hobby-modal" style="display: none;"></div>
       </div>
-    `;
+    `);
 
     this._setupEventListeners(container);
     this._loadHobbies();
@@ -106,8 +107,10 @@ export const HobbyPage = {
     const games = [...new Set(items.map(h => h.game).filter(Boolean))].sort();
     const gameFilter = document.getElementById('hobby-game-filter');
     if (gameFilter) {
-      gameFilter.innerHTML = '<option value="">All Games</option>' +
-        games.map(g => `<option value="${this._escapeHtml(g)}">${this._escapeHtml(g)}</option>`).join('');
+      render(gameFilter, html`
+        <option value="">All Games</option>
+        ${games.map(g => html`<option value="${g}">${g}</option>`)}
+      `);
     }
 
     // Get unique years
@@ -120,8 +123,10 @@ export const HobbyPage = {
 
     const yearFilter = document.getElementById('hobby-year-filter');
     if (yearFilter) {
-      yearFilter.innerHTML = '<option value="">All Years</option>' +
-        years.map(y => `<option value="${y}">${y}</option>`).join('');
+      render(yearFilter, html`
+        <option value="">All Years</option>
+        ${years.map(y => html`<option value="${y}">${y}</option>`)}
+      `);
     }
   },
 
@@ -142,19 +147,19 @@ export const HobbyPage = {
     const { items, loading, error } = store.getState().hobbies;
 
     if (loading) {
-      container.innerHTML = LoadingSpinner.fullPage();
+      render(container, LoadingSpinner.fullPage());
       return;
     }
 
     if (error) {
-      container.innerHTML = `
+      render(container, html`
         <div class="empty-state">
           <div class="empty-state-icon">!</div>
           <h2 class="empty-state-title">Failed to load hobbies</h2>
-          <p class="empty-state-description">${this._escapeHtml(error)}</p>
+          <p class="empty-state-description">${error}</p>
           <button class="btn btn-primary" onclick="location.reload()">Retry</button>
         </div>
-      `;
+      `);
       return;
     }
 
@@ -178,7 +183,7 @@ export const HobbyPage = {
     });
 
     if (filtered.length === 0) {
-      container.innerHTML = `
+      render(container, html`
         <div class="empty-state">
           <div class="empty-state-icon">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -192,7 +197,7 @@ export const HobbyPage = {
             ${items.length === 0 ? 'Add your first log entry to get started.' : 'Try adjusting your filters.'}
           </p>
         </div>
-      `;
+      `);
       return;
     }
 
@@ -203,11 +208,11 @@ export const HobbyPage = {
       return dateB - dateA;
     });
 
-    container.innerHTML = `
+    render(container, html`
       <div class="hobby-list" style="display: flex; flex-direction: column; gap: var(--spacing-sm);">
-        ${sorted.map(hobby => this._renderCard(hobby)).join('')}
+        ${sorted.map(hobby => this._renderCard(hobby))}
       </div>
-    `;
+    `);
 
     // Add event listeners to cards
     container.querySelectorAll('.hobby-card').forEach(card => {
@@ -234,16 +239,16 @@ export const HobbyPage = {
       ? new Date(hobby.completedDate).toLocaleDateString()
       : 'Not completed';
 
-    return `
+    return html`
       <div class="hobby-card card" data-id="${hobby.id}" style="padding: var(--spacing-md);">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: var(--spacing-md);">
           <div style="flex: 1;">
             <h3 style="font-weight: var(--font-weight-semibold); margin-bottom: var(--spacing-xs);">
-              ${this._escapeHtml(hobby.item || 'Untitled')}
+              ${hobby.item || 'Untitled'}
             </h3>
             <div style="display: flex; flex-wrap: wrap; gap: var(--spacing-md); color: var(--color-text-secondary); font-size: var(--font-size-sm);">
-              ${hobby.game ? `<span>Game: ${this._escapeHtml(hobby.game)}</span>` : ''}
-              ${hobby.modelCount ? `<span>Models: ${hobby.modelCount}</span>` : ''}
+              ${hobby.game ? html`<span>Game: ${hobby.game}</span>` : ''}
+              ${hobby.modelCount ? html`<span>Models: ${hobby.modelCount}</span>` : ''}
               <span>Completed: ${date}</span>
             </div>
           </div>
@@ -277,7 +282,7 @@ export const HobbyPage = {
     const title = isEdit ? 'Edit Log Entry' : 'Add Log Entry';
 
     modal.style.display = 'block';
-    modal.innerHTML = `
+    render(modal, html`
       <div style="
         position: fixed;
         inset: 0;
@@ -301,7 +306,7 @@ export const HobbyPage = {
                 id="hobby-item"
                 class="form-input"
                 required
-                value="${isEdit ? this._escapeHtml(hobby.item || '') : ''}"
+                value="${isEdit ? (hobby.item || '') : ''}"
               />
             </div>
 
@@ -311,7 +316,7 @@ export const HobbyPage = {
                 type="text"
                 id="hobby-game"
                 class="form-input"
-                value="${isEdit ? this._escapeHtml(hobby.game || '') : ''}"
+                value="${isEdit ? (hobby.game || '') : ''}"
               />
             </div>
 
@@ -345,7 +350,7 @@ export const HobbyPage = {
           </form>
         </div>
       </div>
-    `;
+    `);
 
     // Event listeners
     const backdrop = modal.querySelector('#hobby-modal-backdrop');
@@ -374,7 +379,7 @@ export const HobbyPage = {
     const modal = document.getElementById('hobby-modal');
     if (modal) {
       modal.style.display = 'none';
-      modal.innerHTML = '';
+      render(modal, html``);
     }
   },
 
@@ -433,14 +438,5 @@ export const HobbyPage = {
       console.error('Failed to delete hobby:', error);
       Toast.error(error.message || 'Failed to delete log entry');
     }
-  },
-
-  /**
-   * Escape HTML
-   */
-  _escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
   },
 };

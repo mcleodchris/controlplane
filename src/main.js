@@ -6,6 +6,7 @@ import './assets/styles/main.css';
 import { store } from './lib/state/store.js';
 import { router } from './lib/router/router.js';
 import { auth } from './lib/utils/auth.js';
+import { html, render } from './lib/html/html.js';
 
 // Handle environment variables for development
 if (window.ENV?.API_BASE_URL?.startsWith('$')) {
@@ -64,13 +65,13 @@ async function init() {
 
   // Subscribe to auth changes to re-render layout
   store.subscribe('auth', () => {
-    render(app);
+    renderLayout(app);
     router.resetContainer(); // Clear cached container reference after layout change
     router.navigate(store.getState().auth.isAuthenticated ? '/' : '/login');
   });
 
   // Render the app layout
-  render(app);
+  renderLayout(app);
 
   // Start the router
   router.start();
@@ -79,21 +80,21 @@ async function init() {
 /**
  * Render the main application layout
  */
-function render(container) {
+function renderLayout(container) {
   const { isAuthenticated } = store.getState().auth;
 
   if (!isAuthenticated) {
     // Just render the page content for login
-    container.innerHTML = '<main id="page-content" class="app-content"></main>';
+    render(container, html`<main id="page-content" class="app-content"></main>`);
   } else {
-    container.innerHTML = `
+    render(container, html`
       <header class="app-header" id="app-header"></header>
       <div class="app-main">
         <nav class="app-sidebar" id="app-nav"></nav>
         <main id="page-content" class="app-content"></main>
       </div>
       <div id="toast-container"></div>
-    `;
+    `);
 
     // Render header and nav
     const header = document.getElementById('app-header');
