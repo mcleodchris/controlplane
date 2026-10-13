@@ -57,6 +57,29 @@ body {
   width: 100%;
 }
 
+/* Sidebar navigation */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-normal);
+  transition: all var(--transition-fast);
+  min-height: 44px;
+}
+
+.nav-item:hover {
+  background-color: var(--color-surface-hover);
+}
+
+.nav-item.active {
+  color: var(--color-primary);
+  background-color: var(--color-primary-light);
+  font-weight: var(--font-weight-medium);
+}
+
 /* Show sidebar on desktop */
 @media (min-width: 768px) {
   .app-sidebar {

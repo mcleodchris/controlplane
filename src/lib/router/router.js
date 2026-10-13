@@ -2,6 +2,8 @@
  * Simple Client-Side Router
  */
 
+import { html, render } from '../html/html.js';
+
 class Router {
   constructor() {
     this._routes = new Map();
@@ -113,29 +115,29 @@ class Router {
 
     if (Component) {
       // Clear container
-      container.innerHTML = '';
+      render(container, html``);
 
       // Render component
       if (typeof Component.render === 'function') {
         Component.render(container);
       } else if (typeof Component === 'function') {
         const content = Component();
-        if (typeof content === 'string') {
-          container.innerHTML = content;
-        } else if (content instanceof HTMLElement) {
+        if (content instanceof HTMLElement) {
           container.appendChild(content);
+        } else if (content) {
+          render(container, content);
         }
       }
     } else {
       // 404 - Not found
-      container.innerHTML = `
+      render(container, html`
         <div class="empty-state">
           <div class="empty-state-icon">404</div>
           <h2 class="empty-state-title">Page Not Found</h2>
           <p class="empty-state-description">The page you're looking for doesn't exist.</p>
           <a href="/" data-link class="btn btn-primary">Go Home</a>
         </div>
-      `;
+      `);
     }
   }
 

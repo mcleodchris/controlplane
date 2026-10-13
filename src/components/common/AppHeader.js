@@ -4,6 +4,7 @@
 
 import { store } from '../../lib/state/store.js';
 import { auth } from '../../lib/utils/auth.js';
+import { html, render } from '../../lib/html/html.js';
 
 export const AppHeader = {
   /**
@@ -12,7 +13,7 @@ export const AppHeader = {
   render(container) {
     const appName = window.ENV?.APP_NAME || 'Controlplane';
 
-    container.innerHTML = `
+    render(container, html`
       <button class="mobile-menu-btn" id="mobile-menu-toggle" aria-label="Toggle menu">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M3 12h18M3 6h18M3 18h18"/>
@@ -33,7 +34,7 @@ export const AppHeader = {
           <rect x="3" y="14" width="7" height="7" rx="1"/>
           <rect x="14" y="14" width="7" height="7" rx="1"/>
         </svg>
-        <span class="app-name">${this._escapeHtml(appName)}</span>
+        <span class="app-name">${appName}</span>
       </a>
 
       <div style="flex: 1;"></div>
@@ -50,7 +51,7 @@ export const AppHeader = {
         </svg>
         <span class="hide-mobile">Logout</span>
       </button>
-    `;
+    `);
 
     this._setupEventListeners(container);
   },
@@ -77,14 +78,5 @@ export const AppHeader = {
       auth.clearToken();
       store.setState({ auth: { isAuthenticated: false, token: null } });
     });
-  },
-
-  /**
-   * Escape HTML
-   */
-  _escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
   },
 };
