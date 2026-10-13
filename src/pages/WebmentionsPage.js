@@ -189,7 +189,7 @@ export const WebmentionsPage = {
                    style="font-weight: var(--font-weight-semibold); color: var(--color-text); text-decoration: none;">
                   ${author.name}
                 </a>
-              ` : '<span style="color: var(--color-text-muted);">Anonymous</span>'}
+              ` : html`<span style="color: var(--color-text-muted);">Anonymous</span>`}
 
               <span style="
                 font-size: var(--font-size-xs);
