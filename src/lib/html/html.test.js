@@ -37,6 +37,39 @@ describe('html', () => {
         .toBe('<img alt="it\'s &lt;x&gt;" title=\'say "hi"\'>');
     });
 
+    it('ignores < and > inside quoted values when finding tag boundaries', () => {
+      expect(str(html`<a title="1 > 0" href="${'javascript:alert(1)'}">open</a>`))
+        .toBe('<a title="1 > 0" href="#">open</a>');
+      expect(str(html`<a title="a <b" href="${'javascript:alert(1)'}">`)).toBe('<a title="a <b" href="#">');
+      expect(() => html`<a title='x > y' onclick="${'go()'}">`).toThrow(/event handler/);
+    });
+
+    it('treats a bare < in text as text', () => {
+      expect(str(html`<p>1 < 2 and ${'<b>'}</p>`)).toBe('<p>1 < 2 and &lt;b&gt;</p>');
+    });
+
+    it('escapes values inside comments', () => {
+      expect(str(html`<!-- a > b ${'--><img>'} --><a href="${'javascript:x'}">`))
+        .toBe('<!-- a > b --&gt;&lt;img&gt; --><a href="#">');
+    });
+
+    it('rejects interpolated tag names', () => {
+      expect(() => html`<${'img src=x onerror=alert(1)'}>`).toThrow(/tag name/i);
+      expect(() => html`<p></${'p'}>`).toThrow(/tag name/i);
+    });
+
+    it('rejects interpolation inside script and style', () => {
+      expect(() => html`<script>var x = ${'1;alert(1)'}</script>`).toThrow(/script/);
+      expect(() => html`<STYLE>a { color: ${'red'} }</STYLE>`).toThrow(/style/);
+    });
+
+    it('resumes normal handling after script and style', () => {
+      expect(str(html`<style>a > b { content: "<"; }</style><a href="${'javascript:x'}">`))
+        .toBe('<style>a > b { content: "<"; }</style><a href="#">');
+      expect(str(html`<script>if (a < b) {}</script><p>${'<i>'}</p>`))
+        .toBe('<script>if (a < b) {}</script><p>&lt;i&gt;</p>');
+    });
+
     it('rejects unquoted attribute values', () => {
       expect(() => html`<div class=${'x'}>`).toThrow(/must be quoted/);
     });

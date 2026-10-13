@@ -10,6 +10,8 @@
  */
 
 const URL_ATTRS = new Set(['href', 'src', 'action', 'formaction', 'poster']);
+// Elements whose content is raw text, where escaping doesn't apply
+const RAW_TEXT_ELEMENTS = new Set(['script', 'style']);
 const SAFE_SCHEMES = new Set(['http', 'https', 'mailto']);
 const BLOB_ATTRS = new Set(['src', 'poster']);
 
@@ -64,23 +66,35 @@ function getContexts(strings) {
 }
 
 function classifyHole(prefix, strings, index) {
-  const insideTag = prefix.lastIndexOf('<') > prefix.lastIndexOf('>');
-  if (!insideTag) {
+  const state = scanMarkup(prefix);
+
+  if (state.kind === 'text') {
+    if (prefix.endsWith('<')) {
+      throw templateError('Tag names cannot be interpolated', strings);
+    }
     return { kind: 'text' };
   }
 
-  const tag = prefix.slice(prefix.lastIndexOf('<'));
-  const attribute = openAttribute(tag);
+  if (state.kind === 'comment') {
+    return { kind: 'text' };
+  }
 
-  if (!attribute) {
-    const unquoted = tag.match(ATTR_EQUALS);
+  if (state.kind === 'raw') {
+    throw templateError(`Interpolation inside <${state.element}> is not allowed`, strings);
+  }
+
+  if (state.kind === 'tag') {
+    if (/^<\/?$/.test(state.tag)) {
+      throw templateError('Tag names cannot be interpolated', strings);
+    }
+    const unquoted = state.tag.match(ATTR_EQUALS);
     if (unquoted) {
       throw templateError(`Attribute "${unquoted[1].toLowerCase()}" must be quoted when interpolated`, strings);
     }
     throw templateError('Interpolation inside a tag must be a quoted attribute value', strings);
   }
 
-  const { name, quote, valueSoFar } = attribute;
+  const { name, quote, valueSoFar } = state;
 
   if (name.startsWith('on')) {
     throw templateError(`Interpolating into event handler attribute "${name}" is not allowed`, strings);
@@ -108,24 +122,67 @@ function classifyHole(prefix, strings, index) {
 }
 
 /**
- * If the tag text ends inside a quoted attribute value, return that
- * attribute's name, quote character and the value text so far.
+ * Walk a template's static markup (earlier holes appear as HOLE) the way an
+ * HTML parser would, and report where its end sits:
+ *
+ * - text:    page text
+ * - comment: inside <!-- … -->
+ * - raw:     inside <script> or <style>
+ * - tag:     inside a tag, outside any quoted value
+ * - attr:    inside a quoted attribute value (with name, quote, valueSoFar)
  */
-function openAttribute(tag) {
-  let open = null;
+function scanMarkup(markup) {
+  let kind = 'text';
+  let tagStart = 0;
+  let attr = null;
+  let rawElement = null;
 
-  for (let i = 0; i < tag.length; i++) {
-    const char = tag[i];
-    if (open) {
-      if (char === open.quote) open = null;
+  for (let i = 0; i < markup.length; i++) {
+    const char = markup[i];
+
+    if (kind === 'text') {
+      if (markup.startsWith('<!--', i)) {
+        kind = 'comment';
+        i += 3;
+      } else if (char === '<' && /[a-zA-Z/!?]/.test(markup[i + 1] ?? '')) {
+        kind = 'tag';
+        tagStart = i;
+      }
+    } else if (kind === 'comment') {
+      if (markup.startsWith('-->', i)) {
+        kind = 'text';
+        i += 2;
+      }
+    } else if (kind === 'raw') {
+      if (markup.slice(i, i + rawElement.length + 2).toLowerCase() === `</${rawElement}`) {
+        kind = 'tag';
+        tagStart = i;
+      }
+    } else if (kind === 'attr') {
+      if (char === attr.quote) {
+        kind = 'tag';
+        attr = null;
+      }
     } else if (char === '"' || char === "'") {
-      const name = tag.slice(0, i).match(ATTR_EQUALS)?.[1];
-      open = { name: name?.toLowerCase(), quote: char, start: i + 1 };
+      const name = markup.slice(tagStart, i).match(ATTR_EQUALS)?.[1];
+      kind = 'attr';
+      attr = { name: name?.toLowerCase(), quote: char, start: i + 1 };
+    } else if (char === '>') {
+      const element = markup.slice(tagStart).match(/^<([a-zA-Z][^\s/>]*)/)?.[1]?.toLowerCase();
+      if (RAW_TEXT_ELEMENTS.has(element)) {
+        kind = 'raw';
+        rawElement = element;
+      } else {
+        kind = 'text';
+      }
     }
   }
 
-  if (!open || !open.name) return null;
-  return { name: open.name, quote: open.quote, valueSoFar: tag.slice(open.start) };
+  if (kind === 'attr') {
+    if (!attr.name) return { kind: 'tag', tag: markup.slice(tagStart) };
+    return { kind, name: attr.name, quote: attr.quote, valueSoFar: markup.slice(attr.start) };
+  }
+  return { kind, tag: markup.slice(tagStart), element: rawElement };
 }
 
 /**
