@@ -13,6 +13,7 @@ import { Toast } from '../components/common/Toast.js';
 export const PhotosPage = {
   _activeTab: 'gallery',
   _selectedPhoto: null,
+  _previewUrls: [],
 
   /**
    * Render the photos page
@@ -122,6 +123,13 @@ export const PhotosPage = {
   },
 
   /**
+   * Called by the router when navigating away
+   */
+  destroy() {
+    this._revokePreviews();
+  },
+
+  /**
    * Set up event listeners
    */
   _setupEventListeners(container) {
@@ -141,6 +149,9 @@ export const PhotosPage = {
   async _renderTab() {
     const content = document.getElementById('photos-content');
     if (!content) return;
+
+    // Every tab render replaces the upload queue, so its previews are no longer shown
+    this._revokePreviews();
 
     switch (this._activeTab) {
       case 'gallery':
@@ -375,6 +386,9 @@ export const PhotosPage = {
   async _handleFiles(files, queue) {
     for (const file of files) {
       const id = `upload-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      // Uploads keep going after the user leaves the tab, but nothing shows (or revokes) a preview then
+      const previewUrl = queue.isConnected ? URL.createObjectURL(file) : null;
+      if (previewUrl) this._previewUrls.push(previewUrl);
 
       const item = document.createElement('div');
       item.id = id;
@@ -383,7 +397,7 @@ export const PhotosPage = {
       item.innerHTML = `
         <div style="display: flex; align-items: center; gap: var(--spacing-md);">
           <div style="width: 60px; height: 60px; flex-shrink: 0; border-radius: var(--border-radius); overflow: hidden; background: var(--color-bg-tertiary);">
-            <img src="${URL.createObjectURL(file)}" style="width: 100%; height: 100%; object-fit: cover;" alt="Preview" />
+            ${previewUrl ? `<img src="${previewUrl}" style="width: 100%; height: 100%; object-fit: cover;" alt="Preview" />` : ''}
           </div>
           <div style="flex: 1; min-width: 0;">
             <p style="font-weight: var(--font-weight-medium); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
@@ -417,6 +431,14 @@ export const PhotosPage = {
         item.querySelector('.progress-bar').style.background = 'var(--color-error)';
       }
     }
+  },
+
+  /**
+   * Free the object URLs created for upload previews
+   */
+  _revokePreviews() {
+    this._previewUrls.forEach(url => URL.revokeObjectURL(url));
+    this._previewUrls = [];
   },
 
   /**

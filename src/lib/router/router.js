@@ -7,6 +7,7 @@ class Router {
     this._routes = new Map();
     this._beforeHooks = [];
     this._currentPath = null;
+    this._currentComponent = null;
     this._container = null;
   }
 
@@ -110,6 +111,10 @@ class Router {
 
     // Find matching route
     const Component = this._routes.get(targetPath);
+
+    // Let the previous page clean up before it is replaced
+    this._currentComponent?.destroy?.();
+    this._currentComponent = Component || null;
 
     if (Component) {
       // Clear container
