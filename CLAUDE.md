@@ -85,8 +85,10 @@ render(container, html`
 `);
 ```
 
-- Every `${}` value is escaped (including quotes); nested `html` views are inserted as-is, arrays are joined, `null`/`undefined`/`false` render nothing
-- Values at the start of `href`/`src`/`action`/`formaction`/`poster` must be `http(s):`, `mailto:` or relative (`blob:` allowed in `src`/`poster`); anything else becomes `#` / empty
+- Every `${}` value is escaped (including quotes); arrays are joined, `null`/`undefined`/`false` render nothing
+- Nested `html` views are inserted as-is **only in text content**; a view inside an attribute value throws
+- Values at the start of `href`/`src`/`action`/`formaction`/`poster` must be `http(s):`, `mailto:` or relative (`blob:` allowed in `src`/`poster`); anything else becomes `#` / empty. Arrays there are joined before checking
+- Later holes in a URL attribute need static text that fixes the scheme first (`/hobby/${id}`, `https://example.com/${path}`); otherwise build the URL in JS and interpolate it as one value
 - Holes must be inside quoted attribute values or text — `html` throws on unquoted values, `on*` handlers, and attribute-name positions (set things like `.required` from JS after rendering)
 - `render(el, view)` is the only code allowed to write `innerHTML`; ESLint fails on `innerHTML`/`outerHTML`/`insertAdjacentHTML` elsewhere
 - There is deliberately no raw-HTML escape hatch — see `docs/adr/0001-html-tagged-template-and-single-render.md`

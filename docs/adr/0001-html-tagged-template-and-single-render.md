@@ -12,3 +12,4 @@ Pages build their markup as strings, and hand-copied `_escapeHtml` helpers let t
 
 - There is deliberately no raw-HTML or trusted-URL escape hatch. Add one only when a real caller needs it, and keep it lint-visible.
 - `blob:` URLs are allowed in `src`/`poster` (our own previews) but not `href`.
+- URL safety is judged on the composed value: holes inside a URL attribute are only allowed once static text has fixed the scheme, and views (pre-built markup) may only be interpolated as text content, never into attribute values.

@@ -31,6 +31,12 @@ describe('html', () => {
       expect(str(html`<div class="card ${'a" b'}">`)).toBe('<div class="card a&quot; b">');
     });
 
+    it('tracks quotes, not = signs or apostrophes inside values', () => {
+      expect(str(html`<a href="/search?q=${'a&b'}">`)).toBe('<a href="/search?q=a&amp;b">');
+      expect(str(html`<img alt="it's ${'<x>'}" title='say "${'hi'}"'>`))
+        .toBe('<img alt="it\'s &lt;x&gt;" title=\'say "hi"\'>');
+    });
+
     it('rejects unquoted attribute values', () => {
       expect(() => html`<div class=${'x'}>`).toThrow(/must be quoted/);
     });
@@ -98,6 +104,39 @@ describe('html', () => {
       expect(str(html`<a title="${'javascript:x'}">`)).toBe('<a title="javascript:x">');
     });
 
+    describe('composed values', () => {
+      it('sanitizes an array at the start as one joined URL', () => {
+        expect(str(html`<a href="${['java', 'script', ':alert(1)']}">`)).toBe('<a href="#">');
+        expect(str(html`<a href="${['/hobby/', 1]}">`)).toBe('<a href="/hobby/1">');
+      });
+
+      it('rejects holes that could extend an unfinished scheme', () => {
+        expect(() => html`<a href="${'java'}${'script:alert(1)'}">`).toThrow(/scheme/);
+        expect(() => html`<a href="java${'script:alert(1)'}">`).toThrow(/scheme/);
+        expect(() => html`<a href="${'java'}script:alert(1)">`).toThrow(/scheme/);
+        expect(() => html`<a href="page-${1}">`).toThrow(/scheme/);
+      });
+
+      it('rejects holes after a static unsafe scheme', () => {
+        expect(() => html`<a href="javascript:${'alert(1)'}">`).toThrow(/scheme/);
+        expect(() => html`<a href="java\tscript:${'alert(1)'}">`).toThrow(/scheme/);
+        expect(() => html`<a href="blob:${'x'}">`).toThrow(/scheme/);
+      });
+
+      it('allows holes once a static prefix pins the scheme', () => {
+        expect(str(html`<a href="https://example.com/${'a b'}?q=${'"x"'}">`))
+          .toBe('<a href="https://example.com/a b?q=&quot;x&quot;">');
+        expect(str(html`<a href="mailto:${'me@example.com'}">`)).toBe('<a href="mailto:me@example.com">');
+        expect(str(html`<img src="blob:${'http://localhost/abc'}">`)).toBe('<img src="blob:http://localhost/abc">');
+        expect(str(html`<a href="#${'section'}">`)).toBe('<a href="#section">');
+      });
+
+      it('allows further holes after a start hole followed by a path delimiter', () => {
+        expect(str(html`<a href="${'/hobby'}/${'2'}">`)).toBe('<a href="/hobby/2">');
+        expect(str(html`<a href="${'javascript:alert(1)//'}/${'x'}">`)).toBe('<a href="#/x">');
+      });
+    });
+
     it('works in multi-hole tags', () => {
       const view = html`<img src="${'javascript:x'}" alt="${'a<b'}" loading="lazy" />`;
       expect(str(view)).toBe('<img src="" alt="a&lt;b" loading="lazy" />');
@@ -121,6 +160,14 @@ describe('html', () => {
       const show = (flag) => html`<div>${flag && html`<span>yes</span>`}</div>`;
       expect(str(show(true))).toBe('<div><span>yes</span></div>');
       expect(str(show(false))).toBe('<div></div>');
+    });
+
+    it('rejects views inside attribute values', () => {
+      const inner = html`<span title="${' onmouseover=alert(1) x='}"></span>`;
+      expect(() => html`<div title="${inner}">hover</div>`).toThrow(/text content/);
+      expect(() => html`<div title="${[inner]}">hover</div>`).toThrow(/text content/);
+      expect(() => html`<a href="${inner}">`).toThrow(/text content/);
+      expect(() => html`<a href="/x/${inner}">`).toThrow(/text content/);
     });
 
     it('does not treat plain strings as markup', () => {
