@@ -26,8 +26,7 @@ const ESCAPES = {
 // Stands in for earlier holes while classifying a template's static text
 const HOLE = '\uE000';
 
-// Matches `name=` (optionally followed by whitespace) at the end of some text
-const ATTR_EQUALS = /([^\s"'=<>/]+)\s*=\s*$/;
+const WHITESPACE = /[\t\n\f\r ]/;
 
 class HtmlView {
   #markup;
@@ -68,30 +67,18 @@ function getContexts(strings) {
 function classifyHole(prefix, strings, index) {
   const state = scanMarkup(prefix);
 
-  if (state.kind === 'text') {
-    if (prefix.endsWith('<')) {
+  switch (state.kind) {
+    case 'text':
+    case 'comment':
+      return { kind: 'text' };
+    case 'raw':
+      throw templateError(`Interpolation inside <${state.element}> is not allowed`, strings);
+    case 'tag-name':
       throw templateError('Tag names cannot be interpolated', strings);
-    }
-    return { kind: 'text' };
-  }
-
-  if (state.kind === 'comment') {
-    return { kind: 'text' };
-  }
-
-  if (state.kind === 'raw') {
-    throw templateError(`Interpolation inside <${state.element}> is not allowed`, strings);
-  }
-
-  if (state.kind === 'tag') {
-    if (/^<\/?$/.test(state.tag)) {
-      throw templateError('Tag names cannot be interpolated', strings);
-    }
-    const unquoted = state.tag.match(ATTR_EQUALS);
-    if (unquoted) {
-      throw templateError(`Attribute "${unquoted[1].toLowerCase()}" must be quoted when interpolated`, strings);
-    }
-    throw templateError('Interpolation inside a tag must be a quoted attribute value', strings);
+    case 'unquoted':
+      throw templateError(`Attribute "${state.name}" must be quoted when interpolated`, strings);
+    case 'tag':
+      throw templateError('Interpolation inside a tag must be a quoted attribute value', strings);
   }
 
   const { name, quote, valueSoFar } = state;
@@ -122,67 +109,144 @@ function classifyHole(prefix, strings, index) {
 }
 
 /**
- * Walk a template's static markup (earlier holes appear as HOLE) the way an
- * HTML parser would, and report where its end sits:
+ * Walk a template's static markup (earlier holes appear as HOLE) following
+ * the HTML tokenizer's states, and report where its end sits:
  *
- * - text:    page text
- * - comment: inside <!-- … -->
- * - raw:     inside <script> or <style>
- * - tag:     inside a tag, outside any quoted value
- * - attr:    inside a quoted attribute value (with name, quote, valueSoFar)
+ * - text:     page text
+ * - comment:  inside <!-- … --> or a <!…>/<?…> bogus comment
+ * - raw:      inside <script> or <style> (with element)
+ * - tag-name: in a tag name, including right after < or </
+ * - unquoted: after name= or in an unquoted attribute value (with name)
+ * - tag:      elsewhere inside a tag (attribute names, between attributes)
+ * - attr:     inside a quoted attribute value (with name, quote, valueSoFar)
  */
 function scanMarkup(markup) {
-  let kind = 'text';
-  let tagStart = 0;
-  let attr = null;
-  let rawElement = null;
+  let state = 'text';
+  let element = '';     // current tag name
+  let closing = false;  // is the current tag a closing tag?
+  let rawElement = '';
+  let attrName = '';
+  let quote = '';
+  let valueStart = 0;
+  let commentEnd = '';
+
+  const endTag = () => {
+    if (!closing && RAW_TEXT_ELEMENTS.has(element)) {
+      rawElement = element;
+      return 'raw';
+    }
+    return 'text';
+  };
 
   for (let i = 0; i < markup.length; i++) {
     const char = markup[i];
+    const next = markup[i + 1] ?? '';
 
-    if (kind === 'text') {
-      if (markup.startsWith('<!--', i)) {
-        kind = 'comment';
-        i += 3;
-      } else if (char === '<' && /[a-zA-Z/!?]/.test(markup[i + 1] ?? '')) {
-        kind = 'tag';
-        tagStart = i;
+    switch (state) {
+      case 'text':
+        if (char !== '<') break;
+        if (markup.startsWith('<!--', i)) {
+          state = 'comment';
+          commentEnd = '-->';
+          i += 3;
+        } else if (next === '!' || next === '?') {
+          state = 'comment';
+          commentEnd = '>';
+        } else if (/[a-zA-Z]/.test(next) || (next === '/' && /[a-zA-Z]/.test(markup[i + 2] ?? ''))) {
+          state = 'tag-name';
+          closing = next === '/';
+          element = '';
+          if (closing) i++;
+        }
+        break;
+
+      case 'comment':
+        if (markup.startsWith(commentEnd, i)) {
+          state = 'text';
+          i += commentEnd.length - 1;
+        }
+        break;
+
+      case 'raw': {
+        const end = `</${rawElement}`;
+        const after = markup[i + end.length] ?? '';
+        if (markup.slice(i, i + end.length).toLowerCase() === end && /[\t\n\f\r />]/.test(after)) {
+          state = 'tag-name';
+          closing = true;
+          element = '';
+          i++;
+        }
+        break;
       }
-    } else if (kind === 'comment') {
-      if (markup.startsWith('-->', i)) {
-        kind = 'text';
-        i += 2;
-      }
-    } else if (kind === 'raw') {
-      if (markup.slice(i, i + rawElement.length + 2).toLowerCase() === `</${rawElement}`) {
-        kind = 'tag';
-        tagStart = i;
-      }
-    } else if (kind === 'attr') {
-      if (char === attr.quote) {
-        kind = 'tag';
-        attr = null;
-      }
-    } else if (char === '"' || char === "'") {
-      const name = markup.slice(tagStart, i).match(ATTR_EQUALS)?.[1];
-      kind = 'attr';
-      attr = { name: name?.toLowerCase(), quote: char, start: i + 1 };
-    } else if (char === '>') {
-      const element = markup.slice(tagStart).match(/^<([a-zA-Z][^\s/>]*)/)?.[1]?.toLowerCase();
-      if (RAW_TEXT_ELEMENTS.has(element)) {
-        kind = 'raw';
-        rawElement = element;
-      } else {
-        kind = 'text';
-      }
+
+      case 'tag-name':
+        if (WHITESPACE.test(char) || char === '/') state = 'before-attr-name';
+        else if (char === '>') state = endTag();
+        else element += char.toLowerCase();
+        break;
+
+      case 'before-attr-name':
+      case 'after-attr-name':
+        if (WHITESPACE.test(char) || char === '/') break;
+        if (char === '>') state = endTag();
+        else if (char === '=' && state === 'after-attr-name') state = 'before-attr-value';
+        else {
+          state = 'attr-name';
+          attrName = char.toLowerCase();
+        }
+        break;
+
+      case 'attr-name':
+        if (WHITESPACE.test(char) || char === '/') state = 'after-attr-name';
+        else if (char === '=') state = 'before-attr-value';
+        else if (char === '>') state = endTag();
+        else attrName += char.toLowerCase();
+        break;
+
+      case 'before-attr-value':
+        if (WHITESPACE.test(char)) break;
+        if (char === '"' || char === "'") {
+          state = 'quoted';
+          quote = char;
+          valueStart = i + 1;
+        } else if (char === '>') {
+          state = endTag();
+        } else {
+          state = 'unquoted-value';
+        }
+        break;
+
+      case 'quoted':
+        if (char === quote) state = 'before-attr-name';
+        break;
+
+      case 'unquoted-value':
+        if (WHITESPACE.test(char)) state = 'before-attr-name';
+        else if (char === '>') state = endTag();
+        break;
     }
   }
 
-  if (kind === 'attr') {
-    if (!attr.name) return { kind: 'tag', tag: markup.slice(tagStart) };
-    return { kind, name: attr.name, quote: attr.quote, valueSoFar: markup.slice(attr.start) };
+  // A hole right after < or </ would supply the tag name
+  if (state === 'text' && /<\/?$/.test(markup)) {
+    return { kind: 'tag-name' };
   }
-  return { kind, tag: markup.slice(tagStart), element: rawElement };
+
+  switch (state) {
+    case 'quoted':
+      return { kind: 'attr', name: attrName, quote, valueSoFar: markup.slice(valueStart) };
+    case 'before-attr-value':
+    case 'unquoted-value':
+      return { kind: 'unquoted', name: attrName };
+    case 'before-attr-name':
+    case 'attr-name':
+    case 'after-attr-name':
+      return { kind: 'tag' };
+    case 'raw':
+      return { kind: 'raw', element: rawElement };
+    default:
+      return { kind: state };
+  }
 }
 
 /**

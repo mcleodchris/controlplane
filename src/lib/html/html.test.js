@@ -70,6 +70,16 @@ describe('html', () => {
         .toBe('<script>if (a < b) {}</script><p>&lt;i&gt;</p>');
     });
 
+    it('follows the parser when an empty unquoted value swallows the next attribute', () => {
+      // `action= formaction="…` gives action the unquoted value `formaction="…`
+      expect(() => html`<a action= formaction="${' data-pwn=1'}">`).toThrow(/must be quoted/);
+      expect(() => html`<img src=  title='${"' onerror='x"}'>`).toThrow(/must be quoted/);
+    });
+
+    it('treats quotes inside unquoted values as data', () => {
+      expect(str(html`<a title=x"y href="${'javascript:x'}">`)).toBe('<a title=x"y href="#">');
+    });
+
     it('rejects unquoted attribute values', () => {
       expect(() => html`<div class=${'x'}>`).toThrow(/must be quoted/);
     });
