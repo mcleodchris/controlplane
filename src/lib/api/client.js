@@ -201,7 +201,7 @@ class ApiClient {
     try {
       const response = await this.post('/authcheck');
       return response?.valid === true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }

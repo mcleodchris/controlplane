@@ -3,6 +3,7 @@
  */
 
 import { store } from '../../lib/state/store.js';
+import { html, render } from '../../lib/html/html.js';
 
 export const ConfirmDialog = {
   _resolvePromise: null,
@@ -82,7 +83,7 @@ export const ConfirmDialog = {
       padding: var(--spacing-lg);
     `;
 
-    backdrop.innerHTML = `
+    render(backdrop, html`
       <div class="card animate-slide-up" style="
         max-width: 400px;
         width: 100%;
@@ -91,23 +92,23 @@ export const ConfirmDialog = {
           font-size: var(--font-size-lg);
           font-weight: var(--font-weight-semibold);
           margin-bottom: var(--spacing-sm);
-        ">${this._escapeHtml(dialog.title)}</h2>
+        ">${dialog.title}</h2>
         <p style="
           color: var(--color-text-secondary);
           margin-bottom: var(--spacing-lg);
-        ">${this._escapeHtml(dialog.message)}</p>
+        ">${dialog.message}</p>
         <div style="display: flex; gap: var(--spacing-sm); justify-content: flex-end;">
           <button
             class="btn btn-secondary"
             onclick="window.__confirmDialogClose(false)"
-          >${this._escapeHtml(dialog.cancelText)}</button>
+          >${dialog.cancelText}</button>
           <button
             class="btn ${dialog.dangerous ? 'btn-danger' : 'btn-primary'}"
             onclick="window.__confirmDialogClose(true)"
-          >${this._escapeHtml(dialog.confirmText)}</button>
+          >${dialog.confirmText}</button>
         </div>
       </div>
-    `;
+    `);
 
     // Close on backdrop click
     backdrop.addEventListener('click', (e) => {
@@ -132,14 +133,5 @@ export const ConfirmDialog = {
 
     // Focus the confirm button
     backdrop.querySelector('.btn-primary, .btn-danger')?.focus();
-  },
-
-  /**
-   * Escape HTML to prevent XSS
-   */
-  _escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
   },
 };

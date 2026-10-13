@@ -2,6 +2,8 @@
  * Error Message Component
  */
 
+import { html } from '../../lib/html/html.js';
+
 export const ErrorMessage = {
   /**
    * Render an error message
@@ -15,14 +17,14 @@ export const ErrorMessage = {
     } = options;
 
     const retryButton = onRetry
-      ? `<button class="btn btn-primary btn-sm" id="error-retry-btn">Try Again</button>`
-      : '';
+      ? html`<button class="btn btn-primary btn-sm" id="error-retry-btn">Try Again</button>`
+      : null;
 
     const dismissButton = onDismiss
-      ? `<button class="btn btn-ghost btn-sm" id="error-dismiss-btn">Dismiss</button>`
-      : '';
+      ? html`<button class="btn btn-ghost btn-sm" id="error-dismiss-btn">Dismiss</button>`
+      : null;
 
-    const html = `
+    const view = html`
       <div class="error-message" style="
         display: flex;
         align-items: flex-start;
@@ -39,21 +41,21 @@ export const ErrorMessage = {
         </svg>
         <div style="flex: 1;">
           <p style="margin-bottom: ${retryButton || dismissButton ? 'var(--spacing-sm)' : '0'};">
-            ${this._escapeHtml(message)}
+            ${message}
           </p>
-          ${retryButton || dismissButton ? `
+          ${retryButton || dismissButton ? html`
             <div style="display: flex; gap: var(--spacing-sm);">
               ${retryButton}
               ${dismissButton}
             </div>
-          ` : ''}
+          ` : null}
         </div>
       </div>
     `;
 
-    // Return object with html and setup function
+    // Return object with view and setup function
     return {
-      html,
+      html: view,
       setup(container) {
         if (onRetry) {
           container.querySelector('#error-retry-btn')?.addEventListener('click', onRetry);
@@ -69,15 +71,6 @@ export const ErrorMessage = {
    * Render inline error (for forms)
    */
   inline(message) {
-    return `<span class="form-error">${this._escapeHtml(message)}</span>`;
-  },
-
-  /**
-   * Escape HTML to prevent XSS
-   */
-  _escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    return html`<span class="form-error">${message}</span>`;
   },
 };

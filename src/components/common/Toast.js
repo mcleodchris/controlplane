@@ -3,6 +3,7 @@
  */
 
 import { store } from '../../lib/state/store.js';
+import { html, render } from '../../lib/html/html.js';
 
 const TOAST_DURATION = 5000;
 
@@ -91,15 +92,15 @@ export const Toast = {
     const toast = store.getState().ui.activeToast;
 
     if (!toast) {
-      container.innerHTML = '';
+      render(container, html``);
       return;
     }
 
     const icons = {
-      success: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>`,
-      error: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>`,
-      warning: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>`,
-      info: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>`,
+      success: html`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>`,
+      error: html`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>`,
+      warning: html`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>`,
+      info: html`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>`,
     };
 
     const colors = {
@@ -116,7 +117,7 @@ export const Toast = {
       info: 'var(--color-info-light)',
     };
 
-    container.innerHTML = `
+    render(container, html`
       <div class="toast animate-slide-up" style="
         display: flex;
         align-items: center;
@@ -131,7 +132,7 @@ export const Toast = {
         max-width: 400px;
       ">
         <span style="flex-shrink: 0;">${icons[toast.type]}</span>
-        <span style="flex: 1; font-size: var(--font-size-sm);">${this._escapeHtml(toast.message)}</span>
+        <span style="flex: 1; font-size: var(--font-size-sm);">${toast.message}</span>
         <button
           onclick="window.__dismissToast()"
           style="
@@ -150,18 +151,9 @@ export const Toast = {
           </svg>
         </button>
       </div>
-    `;
+    `);
 
     // Add global dismiss function
     window.__dismissToast = () => this.dismiss();
-  },
-
-  /**
-   * Escape HTML to prevent XSS
-   */
-  _escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
   },
 };

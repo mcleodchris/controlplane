@@ -9,6 +9,7 @@ import { publishApi } from '../lib/api/publish.js';
 import { openaiApi } from '../lib/api/openai.js';
 import { LoadingSpinner } from '../components/common/LoadingSpinner.js';
 import { Toast } from '../components/common/Toast.js';
+import { html, render } from '../lib/html/html.js';
 
 export const PhotosPage = {
   _activeTab: 'gallery',
@@ -19,7 +20,7 @@ export const PhotosPage = {
    * Render the photos page
    */
   render(container) {
-    container.innerHTML = `
+    render(container, html`
       <div class="animate-fade-in">
         <h1 class="page-title">Photos</h1>
 
@@ -116,7 +117,7 @@ export const PhotosPage = {
           background-color: var(--color-primary-light);
         }
       </style>
-    `;
+    `);
 
     this._setupEventListeners(container);
     this._renderTab();
@@ -170,14 +171,14 @@ export const PhotosPage = {
    * Render the photo gallery
    */
   async _renderGallery(container) {
-    container.innerHTML = LoadingSpinner.fullPage();
+    render(container, LoadingSpinner.fullPage());
 
     try {
       const images = await imagesApi.list();
       store.updateSlice('images', { items: images, loading: false, error: null });
 
       if (!images || images.length === 0) {
-        container.innerHTML = `
+        render(container, html`
           <div class="empty-state">
             <div class="empty-state-icon">
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -189,32 +190,32 @@ export const PhotosPage = {
             <h2 class="empty-state-title">No photos yet</h2>
             <p class="empty-state-description">Upload your first photo to get started.</p>
           </div>
-        `;
+        `);
         return;
       }
 
-      container.innerHTML = `
+      render(container, html`
         <div class="photo-grid">
-          ${images.map((img, index) => this._renderPhotoCard(img, index)).join('')}
+          ${images.map((img, index) => this._renderPhotoCard(img, index))}
         </div>
-      `;
+      `);
 
       // Add click handlers
       container.querySelectorAll('.photo-card').forEach(card => {
         card.addEventListener('click', () => {
           const index = parseInt(card.dataset.index);
-          this._showPhotoDetail(images[index], index);
+          this._showPhotoDetail(images[index]);
         });
       });
     } catch (error) {
       console.error('Failed to load images:', error);
-      container.innerHTML = `
+      render(container, html`
         <div class="empty-state">
           <h2 class="empty-state-title">Failed to load photos</h2>
-          <p class="empty-state-description">${this._escapeHtml(error.message)}</p>
+          <p class="empty-state-description">${error.message}</p>
           <button class="btn btn-primary" onclick="location.reload()">Retry</button>
         </div>
-      `;
+      `);
     }
   },
 
@@ -223,7 +224,7 @@ export const PhotosPage = {
    */
   _renderPhotoCard(image, index) {
     // Handle different image formats
-    let src = '';
+    let src;
     if (typeof image === 'string') {
       src = image;
     } else {
@@ -236,11 +237,11 @@ export const PhotosPage = {
     const alt = typeof image === 'object' ? (image.alt || 'Photo') : 'Photo';
     const date = image.createdAt ? new Date(image.createdAt).toLocaleDateString() : '';
 
-    return `
+    return html`
       <div class="photo-card" data-index="${index}">
         <img
-          src="${this._escapeHtml(src)}"
-          alt="${this._escapeHtml(alt)}"
+          src="${src}"
+          alt="${alt}"
           loading="lazy"
         />
         <div class="photo-card-overlay">
@@ -253,7 +254,7 @@ export const PhotosPage = {
   /**
    * Show photo detail modal
    */
-  _showPhotoDetail(image, index) {
+  _showPhotoDetail(image) {
     const backdrop = document.createElement('div');
     backdrop.id = 'photo-detail-modal';
     backdrop.style.cssText = `
@@ -267,7 +268,7 @@ export const PhotosPage = {
       padding: var(--spacing-lg);
     `;
 
-    let imgSrc = '';
+    let imgSrc;
     if (typeof image === 'string') {
       imgSrc = image;
     } else {
@@ -275,7 +276,7 @@ export const PhotosPage = {
       imgSrc = image.original || image.url || image.originalUrl || '';
     }
 
-    backdrop.innerHTML = `
+    render(backdrop, html`
       <button class="btn btn-ghost" style="position: absolute; top: var(--spacing-md); right: var(--spacing-md); color: white;" id="close-photo-modal">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M18 6L6 18M6 6l12 12"/>
@@ -283,12 +284,12 @@ export const PhotosPage = {
       </button>
       <div style="max-width: 90vw; max-height: 90vh; display: flex; flex-direction: column; gap: var(--spacing-md);">
         <img
-          src="${this._escapeHtml(imgSrc)}"
-          alt="${this._escapeHtml(image.alt || 'Photo')}"
+          src="${imgSrc}"
+          alt="${image.alt || 'Photo'}"
           style="max-width: 100%; max-height: 80vh; object-fit: contain; border-radius: var(--border-radius);"
         />
         <div style="color: white; text-align: center;">
-          ${image.exif ? `
+          ${image.exif ? html`
             <p style="font-size: var(--font-size-sm); color: var(--color-text-muted);">
               ${image.exif.camera || ''} ${image.exif.lens || ''}
             </p>
@@ -299,7 +300,7 @@ export const PhotosPage = {
           <button class="btn btn-primary mt-md" id="use-photo-for-post">Use for Post</button>
         </div>
       </div>
-    `;
+    `);
 
     document.body.appendChild(backdrop);
 
@@ -323,7 +324,7 @@ export const PhotosPage = {
    * Render the upload tab
    */
   _renderUpload(container) {
-    container.innerHTML = `
+    render(container, html`
       <div class="drop-zone" id="upload-drop-zone">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin: 0 auto var(--spacing-md); color: var(--color-text-muted);">
           <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
@@ -349,7 +350,7 @@ export const PhotosPage = {
       </div>
 
       <div id="upload-queue" style="margin-top: var(--spacing-lg);"></div>
-    `;
+    `);
 
     const dropZone = container.querySelector('#upload-drop-zone');
     const fileInput = container.querySelector('#file-input');
@@ -394,14 +395,14 @@ export const PhotosPage = {
       item.id = id;
       item.className = 'card';
       item.style.marginBottom = 'var(--spacing-sm)';
-      item.innerHTML = `
+      render(item, html`
         <div style="display: flex; align-items: center; gap: var(--spacing-md);">
           <div style="width: 60px; height: 60px; flex-shrink: 0; border-radius: var(--border-radius); overflow: hidden; background: var(--color-bg-tertiary);">
             ${previewUrl ? `<img src="${previewUrl}" style="width: 100%; height: 100%; object-fit: cover;" alt="Preview" />` : ''}
           </div>
           <div style="flex: 1; min-width: 0;">
             <p style="font-weight: var(--font-weight-medium); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-              ${this._escapeHtml(file.name)}
+              ${file.name}
             </p>
             <div style="height: 6px; background: var(--color-bg-tertiary); border-radius: 3px; overflow: hidden; margin-top: var(--spacing-xs);">
               <div class="progress-bar" style="height: 100%; width: 0%; background: var(--color-primary); transition: width 0.3s;"></div>
@@ -411,7 +412,7 @@ export const PhotosPage = {
             </p>
           </div>
         </div>
-      `;
+      `);
 
       queue.appendChild(item);
 
@@ -447,22 +448,22 @@ export const PhotosPage = {
   _renderCreatePost(container) {
     const photo = this._selectedPhoto;
 
-    container.innerHTML = `
+    render(container, html`
       <div class="card" style="max-width: 600px;">
         <h2 style="font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold); margin-bottom: var(--spacing-md);">
           Create Photo Post
         </h2>
 
-        ${photo ? `
+        ${photo ? html`
           <div style="margin-bottom: var(--spacing-md);">
             <img
-              src="${this._escapeHtml(typeof photo === 'string' ? photo : (photo.metadata?.avif?.[0]?.url || photo.metadata?.webp?.[0]?.url || photo.original || photo.url || ''))}"
+              src="${typeof photo === 'string' ? photo : (photo.metadata?.avif?.[0]?.url || photo.metadata?.webp?.[0]?.url || photo.original || photo.url || '')}"
               alt="Selected photo"
               style="max-width: 100%; max-height: 200px; object-fit: contain; border-radius: var(--border-radius);"
             />
             <button class="btn btn-ghost btn-sm mt-sm" id="clear-photo">Clear selection</button>
           </div>
-        ` : `
+        ` : html`
           <p style="color: var(--color-text-muted); margin-bottom: var(--spacing-md);">
             Select a photo from the Gallery tab first, or enter a photo URL below.
           </p>
@@ -475,8 +476,7 @@ export const PhotosPage = {
               type="url"
               id="photo-url"
               class="form-input"
-              ${!photo ? 'required' : ''}
-              value="${photo ? this._escapeHtml(typeof photo === 'string' ? photo : (photo.original || photo.url || '')) : ''}"
+              value="${photo ? (typeof photo === 'string' ? photo : (photo.original || photo.url || '')) : ''}"
               placeholder="https://..."
             />
           </div>
@@ -522,7 +522,9 @@ export const PhotosPage = {
           </button>
         </form>
       </div>
-    `;
+    `);
+
+    container.querySelector('#photo-url').required = !photo;
 
     container.querySelector('#clear-photo')?.addEventListener('click', () => {
       this._selectedPhoto = null;
@@ -583,18 +585,18 @@ export const PhotosPage = {
 
         if (result?.location) {
           // Show success with link
-          container.innerHTML = `
+          render(container, html`
             <div class="card text-center" style="max-width: 400px; margin: 0 auto;">
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2" style="margin: 0 auto var(--spacing-md);">
                 <circle cx="12" cy="12" r="10"/>
                 <path d="M9 12l2 2 4-4"/>
               </svg>
               <h2 style="font-size: var(--font-size-lg); margin-bottom: var(--spacing-sm);">Post Published!</h2>
-              <a href="${this._escapeHtml(result.location)}" target="_blank" class="btn btn-primary">
+              <a href="${result.location}" target="_blank" class="btn btn-primary">
                 View Post
               </a>
             </div>
-          `;
+          `);
         } else {
           // No location returned, just show success
           this._selectedPhoto = null;
@@ -607,14 +609,5 @@ export const PhotosPage = {
         Toast.error(error.message || 'Failed to publish post');
       }
     });
-  },
-
-  /**
-   * Escape HTML
-   */
-  _escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
   },
 };

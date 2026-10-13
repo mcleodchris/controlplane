@@ -6,6 +6,7 @@ import { auth } from '../lib/utils/auth.js';
 import { store } from '../lib/state/store.js';
 import { LoadingSpinner } from '../components/common/LoadingSpinner.js';
 import { Toast } from '../components/common/Toast.js';
+import { html, render } from '../lib/html/html.js';
 
 export const LoginPage = {
   _isLoading: false,
@@ -16,7 +17,7 @@ export const LoginPage = {
   render(container) {
     const appName = window.ENV?.APP_NAME || 'Controlplane';
 
-    container.innerHTML = `
+    render(container, html`
       <div style="
         min-height: 100vh;
         display: flex;
@@ -34,7 +35,7 @@ export const LoginPage = {
               <rect x="14" y="14" width="7" height="7" rx="1"/>
             </svg>
             <h1 style="font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold);">
-              ${this._escapeHtml(appName)}
+              ${appName}
             </h1>
             <p style="color: var(--color-text-secondary); margin-top: var(--spacing-xs);">
               Enter your API token to continue
@@ -96,7 +97,7 @@ export const LoginPage = {
           </form>
         </div>
       </div>
-    `;
+    `);
 
     this._setupEventListeners(container);
   },
@@ -165,7 +166,7 @@ export const LoginPage = {
    * Show error message
    */
   _showError(container, message) {
-    container.innerHTML = `
+    render(container, html`
       <div style="
         display: flex;
         align-items: center;
@@ -181,18 +182,9 @@ export const LoginPage = {
           <circle cx="12" cy="12" r="10"/>
           <path d="M15 9l-6 6M9 9l6 6"/>
         </svg>
-        <span>${this._escapeHtml(message)}</span>
+        <span>${message}</span>
       </div>
-    `;
+    `);
     container.style.display = 'block';
-  },
-
-  /**
-   * Escape HTML
-   */
-  _escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
   },
 };

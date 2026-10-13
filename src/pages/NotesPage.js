@@ -5,13 +5,14 @@
 import { micropubApi } from '../lib/api/micropub.js';
 import { Toast } from '../components/common/Toast.js';
 import { LoadingSpinner } from '../components/common/LoadingSpinner.js';
+import { html, render } from '../lib/html/html.js';
 
 export const NotesPage = {
   /**
    * Render the notes page
    */
   render(container) {
-    container.innerHTML = `
+    render(container, html`
       <div class="animate-fade-in">
         <h1 class="page-title">Write a Note</h1>
 
@@ -82,7 +83,7 @@ export const NotesPage = {
           <div id="note-success" style="display: none; margin-top: var(--spacing-lg);"></div>
         </div>
       </div>
-    `;
+    `);
 
     this._setupEventListeners(container);
   },
@@ -159,7 +160,7 @@ export const NotesPage = {
 
         // Show success message
         const location = result?.location;
-        successDiv.innerHTML = `
+        render(successDiv, html`
           <div style="
             display: flex;
             align-items: center;
@@ -176,9 +177,9 @@ export const NotesPage = {
             </svg>
             <div style="flex: 1;">
               <p style="font-weight: var(--font-weight-medium);">Note published successfully!</p>
-              ${location ? `
+              ${location ? html`
                 <a
-                  href="${this._escapeHtml(location)}"
+                  href="${location}"
                   target="_blank"
                   style="font-size: var(--font-size-sm); text-decoration: underline;"
                 >
@@ -187,7 +188,7 @@ export const NotesPage = {
               ` : ''}
             </div>
           </div>
-        `;
+        `);
         successDiv.style.display = 'block';
 
         // Reset form
@@ -204,14 +205,5 @@ export const NotesPage = {
         submitLoading.style.display = 'none';
       }
     });
-  },
-
-  /**
-   * Escape HTML
-   */
-  _escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
   },
 };
