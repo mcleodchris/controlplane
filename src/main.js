@@ -27,7 +27,6 @@ import { WebmentionsPage } from './pages/WebmentionsPage.js';
 // Import layout components
 import { AppHeader } from './components/common/AppHeader.js';
 import { AppNav } from './components/common/AppNav.js';
-import { Toast } from './components/common/Toast.js';
 
 /**
  * Initialize the application

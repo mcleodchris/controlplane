@@ -192,7 +192,7 @@ export const PhotosPage = {
       container.querySelectorAll('.photo-card').forEach(card => {
         card.addEventListener('click', () => {
           const index = parseInt(card.dataset.index);
-          this._showPhotoDetail(images[index], index);
+          this._showPhotoDetail(images[index]);
         });
       });
     } catch (error) {
@@ -212,7 +212,7 @@ export const PhotosPage = {
    */
   _renderPhotoCard(image, index) {
     // Handle different image formats
-    let src = '';
+    let src;
     if (typeof image === 'string') {
       src = image;
     } else {
@@ -242,7 +242,7 @@ export const PhotosPage = {
   /**
    * Show photo detail modal
    */
-  _showPhotoDetail(image, index) {
+  _showPhotoDetail(image) {
     const backdrop = document.createElement('div');
     backdrop.id = 'photo-detail-modal';
     backdrop.style.cssText = `
@@ -256,7 +256,7 @@ export const PhotosPage = {
       padding: var(--spacing-lg);
     `;
 
-    let imgSrc = '';
+    let imgSrc;
     if (typeof image === 'string') {
       imgSrc = image;
     } else {

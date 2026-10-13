@@ -4,7 +4,6 @@
 
 import { store } from '../../lib/state/store.js';
 import { auth } from '../../lib/utils/auth.js';
-import { router } from '../../lib/router/router.js';
 
 export const AppHeader = {
   /**

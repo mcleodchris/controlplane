@@ -2,7 +2,6 @@
  * App Navigation Component
  */
 
-import { router } from '../../lib/router/router.js';
 import { store } from '../../lib/state/store.js';
 
 const NAV_ITEMS = [

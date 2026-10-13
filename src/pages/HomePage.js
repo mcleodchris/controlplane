@@ -2,9 +2,6 @@
  * Home Page / Dashboard Component
  */
 
-import { LoadingSpinner } from '../components/common/LoadingSpinner.js';
-import { router } from '../lib/router/router.js';
-
 export const HomePage = {
   /**
    * Render the home page
