@@ -22,7 +22,7 @@ export default [
       globals: { ...globals.browser },
     },
     rules: {
-      'no-restricted-syntax': ['warn', ...rawHtmlWrites],
+      'no-restricted-syntax': ['error', ...rawHtmlWrites],
     },
   },
   {
