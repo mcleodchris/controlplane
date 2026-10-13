@@ -2,6 +2,8 @@
  * Loading Spinner Component
  */
 
+import { html } from '../../lib/html/html.js';
+
 export const LoadingSpinner = {
   /**
    * Render the spinner
@@ -16,7 +18,7 @@ export const LoadingSpinner = {
 
     const spinnerSize = sizes[size] || sizes.medium;
 
-    return `
+    return html`
       <div class="loading-spinner" role="status" aria-label="Loading">
         <svg
           width="${spinnerSize}"
@@ -41,7 +43,7 @@ export const LoadingSpinner = {
    * Create a full-page loading state
    */
   fullPage() {
-    return `
+    return html`
       <div class="loading-container">
         ${this.render('large')}
       </div>
