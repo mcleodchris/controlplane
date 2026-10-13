@@ -291,6 +291,8 @@ npm test       # Vitest; DOM tests use happy-dom
 
 CI runs both before building the Docker image. Tests live next to the module they test (`src/lib/html/html.test.js`) and exercise its interface.
 
+`src/lib/html/html.fuzz.test.js` is a randomised safety test for the `html` tag: it generates templates with holes in every markup position, fills them with hostile values, and asserts the parsed DOM never gains an injected element/attribute, `on*` handler or dangerous URL. Run more cases with `FUZZ_SEED=<n> FUZZ_ITERATIONS=<n> npx vitest run html.fuzz`. The generator/checker (`src/lib/html/fuzz.js`) has no test-runner imports, so it can also be run in a real browser via the dev server: `(await import('/src/lib/html/fuzz.js')).run(document, { seed: 1, iterations: 20000 })`. Any change to `html.js` should keep this passing across many seeds.
+
 Manual testing checklist:
 1. Login flow with valid/invalid tokens
 2. Hobby log CRUD operations (create, read, update, delete entries)

@@ -30,7 +30,7 @@ export default [
     rules: { 'no-restricted-syntax': 'off' },
   },
   {
-    files: ['*.config.js', 'scripts/**/*.js'],
+    files: ['*.config.js', 'scripts/**/*.js', 'src/**/*.test.js'],
     languageOptions: { globals: { ...globals.node } },
   },
 ];
