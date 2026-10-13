@@ -35,25 +35,6 @@ export function formatFileSize(bytes) {
 }
 
 /**
- * Create an image preview URL
- * @param {File} file - Image file
- */
-export function createPreviewUrl(file) {
-  if (!isImage(file)) return null;
-  return URL.createObjectURL(file);
-}
-
-/**
- * Revoke a preview URL to free memory
- * @param {string} url - Preview URL
- */
-export function revokePreviewUrl(url) {
-  if (url) {
-    URL.revokeObjectURL(url);
-  }
-}
-
-/**
  * Get image dimensions
  * @param {File|string} source - Image file or URL
  * @returns {Promise<{width: number, height: number}>}

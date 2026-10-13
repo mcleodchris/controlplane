@@ -47,7 +47,7 @@ router.navigate('/path')
 router.start()
 ```
 
-Pages must export `{ render(container) }` method.
+Pages must export `{ render(container) }` method, and may export `destroy()`, which the router calls before rendering the next route.
 
 ### API Client (`src/lib/api/client.js`)
 
