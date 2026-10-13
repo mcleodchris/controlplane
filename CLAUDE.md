@@ -72,6 +72,25 @@ Token storage:
 
 The `/authcheck` endpoint returns `{ "valid": true/false }`.
 
+### HTML Templating (`src/lib/html/html.js`)
+
+All markup is built with the `html` tagged template and written with `render`:
+```javascript
+import { html, render } from '../lib/html/html.js';
+
+render(container, html`
+  <a href="${author.url}">${author.name}</a>
+  ${items.map(item => html`<li>${item.title}</li>`)}
+  ${error && html`<p class="form-error">${error}</p>`}
+`);
+```
+
+- Every `${}` value is escaped (including quotes); nested `html` views are inserted as-is, arrays are joined, `null`/`undefined`/`false` render nothing
+- Values at the start of `href`/`src`/`action`/`formaction`/`poster` must be `http(s):`, `mailto:` or relative (`blob:` allowed in `src`/`poster`); anything else becomes `#` / empty
+- Holes must be inside quoted attribute values or text — `html` throws on unquoted values, `on*` handlers, and attribute-name positions (set things like `.required` from JS after rendering)
+- `render(el, view)` is the only code allowed to write `innerHTML`; ESLint fails on `innerHTML`/`outerHTML`/`insertAdjacentHTML` elsewhere
+- There is deliberately no raw-HTML escape hatch — see `docs/adr/0001-html-tagged-template-and-single-render.md`
+
 ## File Locations
 
 | Concern | Location |
@@ -83,23 +102,23 @@ The `/authcheck` endpoint returns `{ "valid": true/false }`.
 | API modules | `src/lib/api/*.js` |
 | Page components | `src/pages/*.js` |
 | Common UI | `src/components/common/*.js` |
+| HTML templating | `src/lib/html/html.js` |
+| Tests | `src/**/*.test.js` (next to the module) |
+| Architecture decisions | `docs/adr/` |
 | Docker config | `Dockerfile`, `nginx/` |
 
 ## Component Patterns
 
 ### Page Components
 ```javascript
+import { html, render } from '../lib/html/html.js';
+
 export const SomePage = {
   render(container) {
-    container.innerHTML = `...`;
+    render(container, html`...`);
     this._setupEventListeners(container);
   },
   _setupEventListeners(container) { ... },
-  _escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-  }
 };
 ```
 
@@ -263,7 +282,14 @@ The photo post creation process uses two separate APIs:
 
 ## Testing
 
-No automated tests yet. Manual testing checklist:
+```bash
+npm run lint   # ESLint (recommended rules + no raw innerHTML)
+npm test       # Vitest; DOM tests use happy-dom
+```
+
+CI runs both before building the Docker image. Tests live next to the module they test (`src/lib/html/html.test.js`) and exercise its interface.
+
+Manual testing checklist:
 1. Login flow with valid/invalid tokens
 2. Hobby log CRUD operations (create, read, update, delete entries)
 3. Photo upload (drag-drop and file picker)
