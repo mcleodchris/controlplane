@@ -16,6 +16,7 @@ export const LoginPage = {
    */
   render(container) {
     const appName = window.ENV?.APP_NAME || 'Controlplane';
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 
     render(container, html`
       <div style="
@@ -55,7 +56,9 @@ export const LoginPage = {
                 autocomplete="current-password"
               />
               <p class="form-hint" style="margin-top: var(--spacing-xs);">
-                Your token is stored securely in your browser.
+                ${isStandalone
+                  ? 'Sign in separately in this Home Screen app. Select Remember me to stay signed in across app sessions.'
+                  : 'Your token is stored in this browser. Select Remember me to stay signed in across browser sessions.'}
               </p>
             </div>
 

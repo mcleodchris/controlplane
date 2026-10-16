@@ -7,14 +7,16 @@ import { auth } from '../../lib/utils/auth.js';
 import { html, render } from '../../lib/html/html.js';
 
 export const AppHeader = {
+  _unsubscribe: null,
   /**
    * Render the header into a container
    */
   render(container) {
+    this.destroy();
     const appName = window.ENV?.APP_NAME || 'Controlplane';
 
     render(container, html`
-      <button class="mobile-menu-btn" id="mobile-menu-toggle" aria-label="Toggle menu">
+      <button type="button" class="mobile-menu-btn" id="mobile-menu-toggle" aria-label="Toggle menu" aria-controls="app-nav" aria-expanded="false">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M3 12h18M3 6h18M3 18h18"/>
         </svg>
@@ -54,6 +56,17 @@ export const AppHeader = {
     `);
 
     this._setupEventListeners(container);
+    const toggle = container.querySelector('#mobile-menu-toggle');
+    const syncVisibility = ({ mobileMenuOpen }) => {
+      toggle.setAttribute('aria-expanded', String(mobileMenuOpen));
+    };
+    this._unsubscribe = store.subscribe('ui', syncVisibility);
+    syncVisibility(store.getState('ui'));
+  },
+
+  destroy() {
+    this._unsubscribe?.();
+    this._unsubscribe = null;
   },
 
   /**
@@ -65,11 +78,6 @@ export const AppHeader = {
     menuToggle?.addEventListener('click', () => {
       const { mobileMenuOpen } = store.getState().ui;
       store.updateSlice('ui', { mobileMenuOpen: !mobileMenuOpen });
-
-      const sidebar = document.getElementById('app-nav');
-      if (sidebar) {
-        sidebar.classList.toggle('open', !mobileMenuOpen);
-      }
     });
 
     // Logout button

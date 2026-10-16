@@ -4,6 +4,7 @@
 
 import { store } from '../../lib/state/store.js';
 import { html, render } from '../../lib/html/html.js';
+import { router } from '../../lib/router/router.js';
 
 const NAV_ITEMS = [
   {
@@ -52,11 +53,12 @@ const NAV_ITEMS = [
 ];
 
 export const AppNav = {
+  _cleanup: [],
   /**
    * Render the navigation into a container
    */
   render(container) {
-    const currentPath = window.location.pathname;
+    this.destroy();
 
     render(container, html`
       <nav class="nav-menu" style="display: flex; flex-direction: column; gap: var(--spacing-xs);">
@@ -64,7 +66,7 @@ export const AppNav = {
           <a
             href="${item.path}"
             data-link
-            class="nav-item ${currentPath === item.path ? 'active' : ''}"
+            class="nav-item"
           >
             ${item.icon}
             <span>${item.label}</span>
@@ -73,19 +75,59 @@ export const AppNav = {
       </nav>
     `);
 
-    this._setupEventListeners(container);
+    const desktop = window.matchMedia('(min-width: 768px)');
+    const backdrop = document.createElement('button');
+    backdrop.type = 'button';
+    backdrop.className = 'mobile-nav-backdrop';
+    backdrop.setAttribute('aria-label', 'Close navigation menu');
+    backdrop.hidden = true;
+    document.body.append(backdrop);
+    backdrop.addEventListener('click', () => this._closeMobileMenu());
+    this._cleanup.push(() => backdrop.remove());
+
+    const syncVisibility = ({ mobileMenuOpen }) => {
+      container.classList.toggle('open', mobileMenuOpen);
+      const visible = mobileMenuOpen && !desktop.matches;
+      backdrop.hidden = !visible;
+      document.documentElement.classList.toggle('mobile-menu-open', visible);
+    };
+    const syncRoute = path => {
+      container.querySelectorAll('.nav-item').forEach(item => {
+        const active = item.getAttribute('href') === path;
+        item.classList.toggle('active', active);
+        if (active) item.setAttribute('aria-current', 'page');
+        else item.removeAttribute('aria-current');
+      });
+      this._closeMobileMenu();
+    };
+
+    this._cleanup.push(store.subscribe('ui', syncVisibility));
+    this._cleanup.push(router.afterEach(syncRoute));
+    syncRoute(router.getCurrentPath() ?? window.location.pathname);
+    syncVisibility(store.getState('ui'));
+
+    const closeOnLayoutChange = () => this._closeMobileMenu();
+    desktop.addEventListener('change', closeOnLayoutChange);
+    this._cleanup.push(() => desktop.removeEventListener('change', closeOnLayoutChange));
+
+    const closeOnEscape = event => {
+      if (event.key === 'Escape') this._closeMobileMenu();
+    };
+    document.addEventListener('keydown', closeOnEscape);
+    this._cleanup.push(() => document.removeEventListener('keydown', closeOnEscape));
   },
 
-  /**
-   * Set up event listeners
-   */
-  _setupEventListeners(container) {
-    // Close mobile menu on nav click
-    container.querySelectorAll('.nav-item').forEach(item => {
-      item.addEventListener('click', () => {
-        store.updateSlice('ui', { mobileMenuOpen: false });
-        container.classList.remove('open');
-      });
-    });
+  _closeMobileMenu() {
+    if (store.getState('ui').mobileMenuOpen) {
+      store.updateSlice('ui', { mobileMenuOpen: false });
+    }
+  },
+
+  /** Release subscriptions when the authenticated layout is replaced. */
+  destroy() {
+    this._closeMobileMenu();
+    this._cleanup.forEach(cleanup => cleanup());
+    this._cleanup = [];
+    document.documentElement.classList.remove('mobile-menu-open');
   },
 };

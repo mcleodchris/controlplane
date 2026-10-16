@@ -81,6 +81,8 @@ async function init() {
  * Render the main application layout
  */
 function renderLayout(container) {
+  AppHeader.destroy();
+  AppNav.destroy();
   const { isAuthenticated } = store.getState().auth;
 
   if (!isAuthenticated) {

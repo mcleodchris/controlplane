@@ -66,6 +66,7 @@
   --container-max-width: 1200px;
   --sidebar-width: 250px;
   --header-height: 60px;
+  --app-header-height: calc(var(--header-height) + env(safe-area-inset-top, 0px));
 
   /* Effects */
   --border-radius-sm: 4px;

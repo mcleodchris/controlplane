@@ -10,6 +10,14 @@ A modern, single-page web application for managing content through the Mage API.
 - **Responsive Design** - Mobile-first, works on desktop and iOS/iPadOS Safari
 - **Dark/Light Mode** - Automatic based on system preference
 
+### iOS Home Screen
+
+Open the page you want to launch (for example, `/hobbies`) in Safari, then use **Share → Add to Home Screen**. The web app manifest requests standalone mode and sets the navigation scope to `/`, covering all features. It deliberately omits `start_url` so the saved page remains the launch URL.
+
+Sign in again inside the Home Screen app: iOS keeps its storage separate from Safari and does not copy the token from Safari's localStorage or sessionStorage. Select **Remember me on this device** inside the app to save the token across app sessions. Without it, the token is stored for the current session and you may need to sign in again when iOS ends that session. Removing and re-adding the app can also require signing in again. See [WebKit's explanation of Home Screen storage](https://webkit.org/blog/14787/webkit-features-in-safari-17-2/).
+
+After deploying a change to installation metadata, if an existing shortcut still opens internal links in a separate view, remove it and add the desired page again. Verify the burger menu and navigation on the device; automated DOM tests cannot reproduce iOS Home Screen webviews.
+
 ## Tech Stack
 
 - **Frontend**: Vanilla JavaScript (ES6+), no framework
