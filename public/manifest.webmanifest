@@ -1,0 +1,16 @@
+{
+  "id": "/",
+  "name": "Controlplane",
+  "short_name": "Controlplane",
+  "display": "standalone",
+  "scope": "/",
+  "theme_color": "#2563eb",
+  "background_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

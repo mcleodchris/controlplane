@@ -16,6 +16,12 @@ server {
         add_header Cache-Control "public, immutable";
     }
 
+    # Serve installation metadata with its own MIME type, without immutable caching.
+    location = /manifest.webmanifest {
+        default_type application/manifest+json;
+        try_files $uri =404;
+    }
+
     # SPA fallback - serve index.html for all routes
     location / {
         try_files $uri $uri/ /index.html;

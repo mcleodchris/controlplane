@@ -80,6 +80,23 @@ body {
   font-weight: var(--font-weight-medium);
 }
 
+/* Expand the mobile menu above the page content. */
+@media (max-width: 767px) {
+  .app-main {
+    flex-direction: column;
+  }
+
+  .app-sidebar {
+    width: 100%;
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .app-sidebar.open {
+    display: block;
+  }
+}
+
 /* Show sidebar on desktop */
 @media (min-width: 768px) {
   .app-sidebar {

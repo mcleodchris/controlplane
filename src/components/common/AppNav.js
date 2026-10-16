@@ -74,6 +74,16 @@ export const AppNav = {
     `);
 
     this._setupEventListeners(container);
+    this.setMobileMenuOpen(false);
+  },
+
+  /**
+   * Keep the menu visibility, toggle accessibility, and UI state in sync.
+   */
+  setMobileMenuOpen(open) {
+    store.updateSlice('ui', { mobileMenuOpen: open });
+    document.getElementById('app-nav')?.classList.toggle('open', open);
+    document.getElementById('mobile-menu-toggle')?.setAttribute('aria-expanded', String(open));
   },
 
   /**
@@ -83,8 +93,7 @@ export const AppNav = {
     // Close mobile menu on nav click
     container.querySelectorAll('.nav-item').forEach(item => {
       item.addEventListener('click', () => {
-        store.updateSlice('ui', { mobileMenuOpen: false });
-        container.classList.remove('open');
+        this.setMobileMenuOpen(false);
       });
     });
   },
