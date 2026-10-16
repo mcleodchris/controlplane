@@ -4,6 +4,7 @@
 
 import { store } from '../../lib/state/store.js';
 import { html, render } from '../../lib/html/html.js';
+import { router } from '../../lib/router/router.js';
 
 const NAV_ITEMS = [
   {
@@ -52,11 +53,13 @@ const NAV_ITEMS = [
 ];
 
 export const AppNav = {
+  _cleanup: [],
   /**
    * Render the navigation into a container
    */
   render(container) {
-    const currentPath = window.location.pathname;
+    this.destroy();
+    store.updateSlice('ui', { mobileMenuOpen: false });
 
     render(container, html`
       <nav class="nav-menu" style="display: flex; flex-direction: column; gap: var(--spacing-xs);">
@@ -64,7 +67,7 @@ export const AppNav = {
           <a
             href="${item.path}"
             data-link
-            class="nav-item ${currentPath === item.path ? 'active' : ''}"
+            class="nav-item"
           >
             ${item.icon}
             <span>${item.label}</span>
@@ -73,28 +76,35 @@ export const AppNav = {
       </nav>
     `);
 
-    this._setupEventListeners(container);
-    this.setMobileMenuOpen(false);
-  },
-
-  /**
-   * Keep the menu visibility, toggle accessibility, and UI state in sync.
-   */
-  setMobileMenuOpen(open) {
-    store.updateSlice('ui', { mobileMenuOpen: open });
-    document.getElementById('app-nav')?.classList.toggle('open', open);
-    document.getElementById('mobile-menu-toggle')?.setAttribute('aria-expanded', String(open));
-  },
-
-  /**
-   * Set up event listeners
-   */
-  _setupEventListeners(container) {
-    // Close mobile menu on nav click
-    container.querySelectorAll('.nav-item').forEach(item => {
-      item.addEventListener('click', () => {
-        this.setMobileMenuOpen(false);
+    const syncVisibility = ({ mobileMenuOpen }) => {
+      container.classList.toggle('open', mobileMenuOpen);
+    };
+    const syncRoute = path => {
+      container.querySelectorAll('.nav-item').forEach(item => {
+        const active = item.getAttribute('href') === path;
+        item.classList.toggle('active', active);
+        if (active) item.setAttribute('aria-current', 'page');
+        else item.removeAttribute('aria-current');
       });
-    });
+      store.updateSlice('ui', { mobileMenuOpen: false });
+    };
+
+    this._cleanup.push(store.subscribe('ui', syncVisibility));
+    this._cleanup.push(router.afterEach(syncRoute));
+    syncRoute(router.getCurrentPath() ?? window.location.pathname);
+
+    const desktop = window.matchMedia('(min-width: 768px)');
+    const closeOnDesktop = () => {
+      if (desktop.matches) store.updateSlice('ui', { mobileMenuOpen: false });
+    };
+    desktop.addEventListener('change', closeOnDesktop);
+    this._cleanup.push(() => desktop.removeEventListener('change', closeOnDesktop));
+    closeOnDesktop();
+  },
+
+  /** Release subscriptions when the authenticated layout is replaced. */
+  destroy() {
+    this._cleanup.forEach(cleanup => cleanup());
+    this._cleanup = [];
   },
 };

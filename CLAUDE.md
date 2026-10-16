@@ -43,11 +43,14 @@ Custom SPA router:
 ```javascript
 router.on('/path', PageComponent)
 router.beforeEach((path) => newPath)  // Guards
+const unsubscribe = router.afterEach((path) => { /* Navigation completed */ })
 router.navigate('/path')
 router.start()
 ```
 
 Pages must export `{ render(container) }` method, and may export `destroy()`, which the router calls before rendering the next route.
+
+`afterEach` receives the resolved path after rendering (including back/forward, redirects, and 404s). Selecting the current route also notifies subscribers without rendering again. Layout components release their store and route subscriptions in `destroy()` before the layout is replaced.
 
 ### API Client (`src/lib/api/client.js`)
 

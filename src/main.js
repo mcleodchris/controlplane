@@ -81,6 +81,9 @@ async function init() {
  * Render the main application layout
  */
 function renderLayout(container) {
+  AppHeader.destroy();
+  AppNav.destroy();
+  store.updateSlice('ui', { mobileMenuOpen: false });
   const { isAuthenticated } = store.getState().auth;
 
   if (!isAuthenticated) {

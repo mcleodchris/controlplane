@@ -28,24 +28,37 @@ body {
   position: sticky;
   top: 0;
   z-index: var(--z-sticky);
-  height: var(--header-height);
+  height: var(--app-header-height);
   background-color: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
   display: flex;
   align-items: center;
   padding: 0 var(--spacing-lg);
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 .app-main {
   flex: 1;
   display: flex;
+  flex-direction: column;
 }
 
 .app-sidebar {
-  width: var(--sidebar-width);
+  position: fixed;
+  top: var(--app-header-height);
+  left: 0;
+  right: 0;
+  z-index: var(--z-dropdown);
+  width: 100%;
+  max-height: calc(100vh - var(--app-header-height));
+  max-height: calc(100dvh - var(--app-header-height));
+  overflow-y: auto;
   background-color: var(--color-bg-secondary);
-  border-right: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
   padding: var(--spacing-lg);
+  padding-bottom: max(var(--spacing-lg), env(safe-area-inset-bottom, 0px));
+  padding-left: max(var(--spacing-lg), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--spacing-lg), env(safe-area-inset-right, 0px));
   display: none;
 }
 
@@ -80,26 +93,25 @@ body {
   font-weight: var(--font-weight-medium);
 }
 
-/* Expand the mobile menu above the page content. */
-@media (max-width: 767px) {
-  .app-main {
-    flex-direction: column;
-  }
-
-  .app-sidebar {
-    width: 100%;
-    border-right: 0;
-    border-bottom: 1px solid var(--color-border);
-  }
-
-  .app-sidebar.open {
-    display: block;
-  }
+/* Keep the mobile menu below the sticky header, even on a scrolled page. */
+.app-sidebar.open {
+  display: block;
 }
 
 /* Show sidebar on desktop */
 @media (min-width: 768px) {
+  .app-main {
+    flex-direction: row;
+  }
+
   .app-sidebar {
+    position: static;
+    width: var(--sidebar-width);
+    max-height: none;
+    overflow-y: visible;
+    border-bottom: 0;
+    border-right: 1px solid var(--color-border);
+    padding: var(--spacing-lg);
     display: block;
   }
 }
@@ -198,11 +210,6 @@ body {
 
 /* iOS Safe Areas */
 @supports (padding: env(safe-area-inset-top)) {
-  .app-header {
-    padding-top: env(safe-area-inset-top);
-    height: calc(var(--header-height) + env(safe-area-inset-top));
-  }
-
   .app-content {
     padding-bottom: env(safe-area-inset-bottom);
   }

@@ -8,6 +8,7 @@ class Router {
   constructor() {
     this._routes = new Map();
     this._beforeHooks = [];
+    this._afterHooks = new Set();
     this._currentPath = null;
     this._currentComponent = null;
     this._container = null;
@@ -29,6 +30,12 @@ class Router {
     return this;
   }
 
+  /** Subscribe to completed navigation; returns an unsubscribe function. */
+  afterEach(hook) {
+    this._afterHooks.add(hook);
+    return () => this._afterHooks.delete(hook);
+  }
+
   /**
    * Navigate to a path
    */
@@ -44,6 +51,8 @@ class Router {
 
     // Don't navigate if we're already there
     if (targetPath === this._currentPath) {
+      // A selection of the current page still completes navigation (e.g. to close a menu).
+      this._notifyAfterHooks(targetPath);
       return;
     }
 
@@ -144,6 +153,12 @@ class Router {
         </div>
       `);
     }
+
+    this._notifyAfterHooks(targetPath);
+  }
+
+  _notifyAfterHooks(path) {
+    this._afterHooks.forEach(hook => hook(path));
   }
 
   /**

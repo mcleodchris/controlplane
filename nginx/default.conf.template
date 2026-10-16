@@ -10,7 +10,14 @@ server {
     add_header X-XSS-Protection "1; mode=block" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
 
-    # Cache static assets
+    # Icon filenames are stable, so revalidate them rather than caching forever.
+    location ~ ^/(favicon\.svg|apple-touch-icon\.png|icon-(192|512)\.png)$ {
+        # A negative expiry emits Cache-Control: no-cache and preserves inherited headers.
+        expires -1;
+        try_files $uri =404;
+    }
+
+    # Cache bundled static assets
     location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2)$ {
         expires 1y;
         add_header Cache-Control "public, immutable";
@@ -19,6 +26,7 @@ server {
     # Serve installation metadata with its own MIME type, without immutable caching.
     location = /manifest.webmanifest {
         default_type application/manifest+json;
+        expires -1;
         try_files $uri =404;
     }
 

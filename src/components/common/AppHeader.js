@@ -5,13 +5,14 @@
 import { store } from '../../lib/state/store.js';
 import { auth } from '../../lib/utils/auth.js';
 import { html, render } from '../../lib/html/html.js';
-import { AppNav } from './AppNav.js';
 
 export const AppHeader = {
+  _unsubscribe: null,
   /**
    * Render the header into a container
    */
   render(container) {
+    this.destroy();
     const appName = window.ENV?.APP_NAME || 'Controlplane';
 
     render(container, html`
@@ -55,6 +56,17 @@ export const AppHeader = {
     `);
 
     this._setupEventListeners(container);
+    const toggle = container.querySelector('#mobile-menu-toggle');
+    const syncVisibility = ({ mobileMenuOpen }) => {
+      toggle.setAttribute('aria-expanded', String(mobileMenuOpen));
+    };
+    this._unsubscribe = store.subscribe('ui', syncVisibility);
+    syncVisibility(store.getState('ui'));
+  },
+
+  destroy() {
+    this._unsubscribe?.();
+    this._unsubscribe = null;
   },
 
   /**
@@ -65,11 +77,7 @@ export const AppHeader = {
     const menuToggle = container.querySelector('#mobile-menu-toggle');
     menuToggle?.addEventListener('click', () => {
       const { mobileMenuOpen } = store.getState().ui;
-      AppNav.setMobileMenuOpen(!mobileMenuOpen);
-    });
-
-    container.querySelector('.app-logo')?.addEventListener('click', () => {
-      AppNav.setMobileMenuOpen(false);
+      store.updateSlice('ui', { mobileMenuOpen: !mobileMenuOpen });
     });
 
     // Logout button
