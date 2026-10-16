@@ -59,7 +59,6 @@ export const AppNav = {
    */
   render(container) {
     this.destroy();
-    store.updateSlice('ui', { mobileMenuOpen: false });
 
     render(container, html`
       <nav class="nav-menu" style="display: flex; flex-direction: column; gap: var(--spacing-xs);">
@@ -76,8 +75,21 @@ export const AppNav = {
       </nav>
     `);
 
+    const desktop = window.matchMedia('(min-width: 768px)');
+    const backdrop = document.createElement('button');
+    backdrop.type = 'button';
+    backdrop.className = 'mobile-nav-backdrop';
+    backdrop.setAttribute('aria-label', 'Close navigation menu');
+    backdrop.hidden = true;
+    document.body.append(backdrop);
+    backdrop.addEventListener('click', () => this._closeMobileMenu());
+    this._cleanup.push(() => backdrop.remove());
+
     const syncVisibility = ({ mobileMenuOpen }) => {
       container.classList.toggle('open', mobileMenuOpen);
+      const visible = mobileMenuOpen && !desktop.matches;
+      backdrop.hidden = !visible;
+      document.documentElement.classList.toggle('mobile-menu-open', visible);
     };
     const syncRoute = path => {
       container.querySelectorAll('.nav-item').forEach(item => {
@@ -86,25 +98,36 @@ export const AppNav = {
         if (active) item.setAttribute('aria-current', 'page');
         else item.removeAttribute('aria-current');
       });
-      store.updateSlice('ui', { mobileMenuOpen: false });
+      this._closeMobileMenu();
     };
 
     this._cleanup.push(store.subscribe('ui', syncVisibility));
     this._cleanup.push(router.afterEach(syncRoute));
     syncRoute(router.getCurrentPath() ?? window.location.pathname);
+    syncVisibility(store.getState('ui'));
 
-    const desktop = window.matchMedia('(min-width: 768px)');
-    const closeOnDesktop = () => {
-      if (desktop.matches) store.updateSlice('ui', { mobileMenuOpen: false });
+    const closeOnLayoutChange = () => this._closeMobileMenu();
+    desktop.addEventListener('change', closeOnLayoutChange);
+    this._cleanup.push(() => desktop.removeEventListener('change', closeOnLayoutChange));
+
+    const closeOnEscape = event => {
+      if (event.key === 'Escape') this._closeMobileMenu();
     };
-    desktop.addEventListener('change', closeOnDesktop);
-    this._cleanup.push(() => desktop.removeEventListener('change', closeOnDesktop));
-    closeOnDesktop();
+    document.addEventListener('keydown', closeOnEscape);
+    this._cleanup.push(() => document.removeEventListener('keydown', closeOnEscape));
+  },
+
+  _closeMobileMenu() {
+    if (store.getState('ui').mobileMenuOpen) {
+      store.updateSlice('ui', { mobileMenuOpen: false });
+    }
   },
 
   /** Release subscriptions when the authenticated layout is replaced. */
   destroy() {
+    this._closeMobileMenu();
     this._cleanup.forEach(cleanup => cleanup());
     this._cleanup = [];
+    document.documentElement.classList.remove('mobile-menu-open');
   },
 };

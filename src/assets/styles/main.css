@@ -17,6 +17,29 @@ body {
   line-height: var(--line-height-normal);
 }
 
+html.mobile-menu-open {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+html.mobile-menu-open body {
+  /* Do not create a new scroll container: the header must stay sticky to the viewport. */
+  overflow: clip;
+}
+
+/* Keep gestures outside the panel from scrolling the page on touch devices. */
+html.mobile-menu-open .app-header {
+  touch-action: none;
+}
+
+.mobile-nav-backdrop {
+  position: fixed;
+  inset: var(--app-header-height) 0 0;
+  z-index: calc(var(--z-dropdown) - 1);
+  background: rgba(0, 0, 0, 0.35);
+  touch-action: none;
+}
+
 /* App Layout */
 #app {
   display: flex;
@@ -35,6 +58,8 @@ body {
   align-items: center;
   padding: 0 var(--spacing-lg);
   padding-top: env(safe-area-inset-top, 0px);
+  padding-left: max(var(--spacing-lg), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--spacing-lg), env(safe-area-inset-right, 0px));
 }
 
 .app-main {
@@ -53,6 +78,7 @@ body {
   max-height: calc(100vh - var(--app-header-height));
   max-height: calc(100dvh - var(--app-header-height));
   overflow-y: auto;
+  overscroll-behavior: contain;
   background-color: var(--color-bg-secondary);
   border-bottom: 1px solid var(--color-border);
   padding: var(--spacing-lg);
@@ -111,7 +137,6 @@ body {
     overflow-y: visible;
     border-bottom: 0;
     border-right: 1px solid var(--color-border);
-    padding: var(--spacing-lg);
     display: block;
   }
 }

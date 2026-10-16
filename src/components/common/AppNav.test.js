@@ -46,12 +46,53 @@ describe('AppNav', () => {
     expect(nav.classList.contains('open')).toBe(false);
   });
 
+  it('shows a backdrop, locks background scrolling, and closes on an outside tap', () => {
+    store.updateSlice('ui', { mobileMenuOpen: true });
+    const backdrop = document.querySelector('.mobile-nav-backdrop');
+    expect(backdrop).not.toBeNull();
+    expect(backdrop.hidden).toBe(false);
+    expect(document.documentElement.classList.contains('mobile-menu-open')).toBe(true);
+    backdrop.click();
+    expect(store.getState('ui').mobileMenuOpen).toBe(false);
+    expect(backdrop.hidden).toBe(true);
+    expect(document.documentElement.classList.contains('mobile-menu-open')).toBe(false);
+  });
+
+  it('closes on Escape and removes the backdrop and scroll lock on destruction', () => {
+    store.updateSlice('ui', { mobileMenuOpen: true });
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    expect(store.getState('ui').mobileMenuOpen).toBe(false);
+    store.updateSlice('ui', { mobileMenuOpen: true });
+    AppNav.destroy();
+    expect(store.getState('ui').mobileMenuOpen).toBe(false);
+    expect(document.querySelector('.mobile-nav-backdrop')).toBeNull();
+    expect(document.documentElement.classList.contains('mobile-menu-open')).toBe(false);
+  });
+
+  it('does not emit UI updates for rendering or navigation when already closed', () => {
+    const uiChanged = vi.fn();
+    const unsubscribe = store.subscribe('ui', uiChanged);
+    try {
+      AppNav.render(nav);
+      router.navigate('/photos');
+      expect(uiChanged).not.toHaveBeenCalled();
+      store.updateSlice('ui', { mobileMenuOpen: true });
+      uiChanged.mockClear();
+      router.navigate('/notes');
+      expect(uiChanged).toHaveBeenCalledTimes(1);
+    } finally {
+      unsubscribe();
+    }
+  });
+
   it('updates the current item and closes on programmatic navigation', () => {
     store.updateSlice('ui', { mobileMenuOpen: true });
     router.navigate('/photos');
     expect(nav.querySelector('.active').getAttribute('href')).toBe('/photos');
     expect(nav.querySelector('[aria-current="page"]').getAttribute('href')).toBe('/photos');
     expect(store.getState('ui').mobileMenuOpen).toBe(false);
+    expect(document.querySelector('.mobile-nav-backdrop').hidden).toBe(true);
+    expect(document.documentElement.classList.contains('mobile-menu-open')).toBe(false);
     expect(nav.classList.contains('open')).toBe(false);
   });
 
@@ -109,6 +150,7 @@ describe('AppNav', () => {
     expect(nav.classList.contains('open')).toBe(true);
     AppNav.destroy();
     store.updateSlice('ui', { mobileMenuOpen: false });
-    expect(nav.classList.contains('open')).toBe(true);
+    store.updateSlice('ui', { mobileMenuOpen: true });
+    expect(nav.classList.contains('open')).toBe(false);
   });
 });

@@ -37,3 +37,26 @@ it('keeps desktop navigation in the layout with the mobile toggle hidden', () =>
   expect(getComputedStyle(document.querySelector('nav')).position).toBe('static');
   expect(getComputedStyle(document.querySelector('button')).display).toBe('none');
 });
+
+it('locks background scrolling while allowing the navigation panel to scroll', () => {
+  document.documentElement.classList.add('mobile-menu-open');
+  try {
+    expect(getComputedStyle(document.documentElement).overflow).toBe('hidden');
+    expect(getComputedStyle(document.body).overflow).toBe('clip');
+    expect(getComputedStyle(document.querySelector('nav')).overflowY).toBe('auto');
+    expect(getComputedStyle(document.querySelector('nav')).overscrollBehavior).toBe('contain');
+  } finally {
+    document.documentElement.classList.remove('mobile-menu-open');
+  }
+});
+
+it('preserves landscape notch padding when navigation switches to desktop layout', () => {
+  // happy-dom cannot resolve max()/env(); supply their resolved values to check the cascade.
+  document.querySelector('style').textContent = styles
+    .replaceAll('max(var(--spacing-lg), env(safe-area-inset-left, 0px))', '44px')
+    .replaceAll('max(var(--spacing-lg), env(safe-area-inset-right, 0px))', '34px');
+  window.happyDOM.setWindowSize({ width: 844, height: 390 });
+  const nav = getComputedStyle(document.querySelector('nav'));
+  expect(nav.paddingLeft).toBe('44px');
+  expect(nav.paddingRight).toBe('34px');
+});
